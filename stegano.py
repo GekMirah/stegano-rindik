@@ -6,6 +6,7 @@ import struct
 import sys
 import wave
 import secrets
+import os
 
 from HashHelper import sha256_hash
 
@@ -15,7 +16,7 @@ class Stegano:
 
     # ==============================ini kuubah=============================
     # def hide(file_to_hide, audio_file_for_hiding, passphrase):
-    def hide(file_to_hide, audio_file_for_hiding):
+    def hide(file_to_hide, audio_file_for_hiding,output):
     # =====================================================================
         
         sound = wave.open(audio_file_for_hiding, "r")
@@ -126,12 +127,13 @@ class Stegano:
             values.append(struct.pack(fmt[-1], raw_data[sound_index]))
             sound_index += 1
 
-        sound_steg = wave.open("output.wav", "w")
+        dirOutput = os.path.join('/var/www/stegano-rindik/static/output', output)
+        sound_steg = wave.open(dirOutput, "w")
         sound_steg.setparams(params)
         sound_steg.writeframes(b"".join(values))
         sound_steg.close()
 
-        output_song = taglib.File("output.wav")
+        output_song = taglib.File(dirOutput)
         output_song.tags["STEGO"] = "1"
         output_song.tags["STEGO_SIZE"] = str(filesize)
         # ==============================ini kuubah=============================
@@ -140,7 +142,7 @@ class Stegano:
         output_song.tags["STEGO_FILE_NAME"] = ntpath.basename(file_to_hide)
         output_song.tags["STEGO_LSB"] = str(num_lsb)
         output_song.save()
-        output_song.close()
+
 
     # ==============================ini kuubah=============================
     # def retrieve(audio_file, passphrase):
@@ -149,8 +151,11 @@ class Stegano:
         # Recover data from the file at sound_path to the file at output_path
 
         input_song = taglib.File(audio_file)
-        if (not int(input_song.tags["STEGO"][0])):
-            raise ValueError("No file is hidden inside")
+        try:
+            if (not int(input_song.tags["STEGO"][0])):
+                pass
+        except:
+            return {'status': 'error','message' : 'no stegano message found'}
 
         file_name = input_song.tags["STEGO_FILE_NAME"][0]
         bytes_to_recover = int(input_song.tags["STEGO_SIZE"][0])
@@ -160,7 +165,7 @@ class Stegano:
         num_lsb = int(input_song.tags["STEGO_LSB"][0])
 
         input_song.save()
-        input_song.close()
+        #input_song.close()
 
         sound = wave.open(audio_file, "r")
 
@@ -186,7 +191,8 @@ class Stegano:
         raw_data = list(struct.unpack(fmt, sound.readframes(num_frames)))
         # Used to extract the least significant num_lsb bits of an integer
         mask = (1 << num_lsb) - 1
-        output_file = open(file_name, "wb+")
+        #outputDir = os.path.join('/var/www/stegano-rindik/static/
+        #output_file = open(file_name, "wb+")
 
         sound.close()
         data = bytearray()
@@ -220,7 +226,7 @@ class Stegano:
         # ==============================ini kuubah=============================
         
 
-        output_file.write(data)
-        output_file.close()
+        # output_file.write(data)
+        #output_file.close()
         # print("hidden text: ", data.decode("utf8"))
-        return data.decode("utf-8")
+        return {'status': 'success', 'message': str(data.decode("utf-8"))}

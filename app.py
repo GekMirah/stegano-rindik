@@ -19,26 +19,29 @@ CORS(app)
 def main():
     return render_template("indexx.html")
 
-@app.route("/download")
-def download():
-    return send_file(os.path.join('./audio/stegano-1BNvpg-Cemagi.wav'), as_attachment=True)
-
 @app.route("/hide", methods=["POST"])
 def hide():
     text = request.files['text']
     wav = request.files['wav']
 
-    text.save(text.filename)
     unique = secrets.token_urlsafe(4)
-    wav.save(os.path.join('./audio/',unique+'-'+wav.filename))
-    Stegano.hide(file_to_hide=text.filename, audio_file_for_hiding=os.path.join('./audio/',unique+'-'+wav.filename))
-    os.remove(os.path.join('./audio/',unique+'-'+wav.filename))
-    return send_file("output.wav")
+    textDir = os.path.join('/var/www/stegano-rindik/static/text/',unique+'-'+text.filename)
+    wavDir = os.path.join('/var/www/stegano-rindik/static/audio/',unique+'-'+wav.filename)
+    outputFilename = 'stegano-'+unique+'-'+wav.filename
+    outputDir = os.path.join('/var/www/stegano-rindik/static/output/',outputFilename)
+    text.save(textDir)
+    wav.save(wavDir)
+    Stegano.hide(file_to_hide=textDir, audio_file_for_hiding=wavDir, output=outputFilename)
+    os.remove(wavDir)
+    return send_file(outputDir)
 
 @app.route("/retrieve", methods=["POST"])
 def retrieve():
     wav = request.files['wav']
-    res = {"hiddenText": str(Stegano.retrieve(wav.filename))}
+    wavDir = os.path.join('/var/www/stegano-rindik/static/audio-stegano/', wav.filename)
+    wav.save(wavDir)
+    res = Stegano.retrieve(wavDir)
+    os.remove(wavDir)
     return res
 
 if __name__=='__main__':
