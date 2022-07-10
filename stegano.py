@@ -146,7 +146,7 @@ class Stegano:
 
     # ==============================ini kuubah=============================
     # def retrieve(audio_file, passphrase):
-    def retrieve(audio_file):
+    def retrieve(audio_file,data_deleted = False):
     # =====================================================================
         # Recover data from the file at sound_path to the file at output_path
 
@@ -173,6 +173,8 @@ class Stegano:
         sample_width = sound.getsampwidth()
         num_frames = sound.getnframes()
         num_samples = num_frames * num_channels
+        
+        
         
         if (sample_width == 1):  # samples are unsigned 8-bit integers
             fmt = "{}B".format(num_samples)
@@ -229,4 +231,14 @@ class Stegano:
         # output_file.write(data)
         #output_file.close()
         # print("hidden text: ", data.decode("utf8"))
+        
+        # deleting all tag from audio
+        if(data_deleted):
+            sound_tag = taglib.File(audio_file)
+            del sound_tag.tags["STEGO"]
+            del sound_tag.tags["STEGO_SIZE"]
+            del sound_tag.tags["STEGO_FILE_NAME"]
+            del sound_tag.tags["STEGO_LSB"]
+            sound_tag.save()
+        
         return {'status': 'success', 'message': str(data.decode("utf-8"))}
